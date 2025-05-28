@@ -61,3 +61,19 @@ def correlate_eigengenes(eigengenes, phenotypes):
             corr_df.loc[m, ph] = corr_value
 
     return corr_df
+
+
+
+def analyze_best_k(expr_matrix, k_values, resolution=1.0):
+    results = []
+    for k in k_values:
+        adata = build_knn_graph(expr_matrix, k)
+        sc.tl.leiden(adata, resolution=resolution)
+        clusters = adata.obs['leiden']
+        
+        n_clusters = clusters.nunique()
+        # Optional: compute modularity (scanpy has it in adata.uns['modularity'] if computed)
+        # or silhouette score - but silhouette needs embedding or distance matrix
+        
+        results.append({'k': k, 'n_clusters': n_clusters})
+    return pd.DataFrame(results)

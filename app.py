@@ -6,7 +6,8 @@ from backend import (
     build_knn_graph,
     run_leiden,
     compute_eigengenes,
-    correlate_eigengenes
+    correlate_eigengenes,
+    analyze_best_k
 )
 
 st.set_page_config(page_title="Network Module Analyzer", layout="wide")
@@ -83,3 +84,19 @@ if expr_df is not None and pheno_df is not None:
 
             except Exception as e:
                 st.error(f"❌ An error occurred during analysis: {e}")
+
+
+
+if expr_df is not None:
+
+    if st.button("Analyze k"):
+        with st.spinner("Running k analysis..."):
+            k_range = list(range(2, 31))
+            best_k_df = analyze_best_k(expr_df, k_range, resolution)
+            st.dataframe(best_k_df)
+            fig2, ax2 = plt.subplots(figsize=(10, 5))
+            ax2.plot(best_k_df['k'], best_k_df['n_clusters'], marker='o')
+            ax2.set_xlabel('k (neighbors)')
+            ax2.set_ylabel('Number of Leiden clusters')
+            ax2.set_title('Number of clusters vs k (res=1.0)')
+            st.pyplot(fig2)
