@@ -72,10 +72,11 @@ if expr_df is not None and pheno_df is not None:
                 corr = correlate_eigengenes(eigengenes_df, pheno_df)
                 st.dataframe(corr)
 
-                st.subheader("📊 Heatmap of Correlations (Modules × Phenotypes)")
+                corr=corr.astype(float)
+                st.subheader("📊 Heatmap of Correlations (Phenotypes x Modules)")
                 # Transpose if needed: rows = phenotypes, columns = modules
-                fig, ax = plt.subplots(figsize=(10, 6))
-                sns.heatmap(corr.T, annot=True, fmt=".2f", cmap="vlag", cbar_kws={"label": "Pearson r"}, ax=ax)
+                fig, ax = plt.subplots(figsize=(10, 2))
+                sns.heatmap(corr.T.values, annot=True, fmt=".2f", cmap="vlag", cbar_kws={"label": "Pearson r"}, ax=ax)
                 plt.xlabel("Modules")
                 plt.ylabel("Phenotypes")
                 st.pyplot(fig)
