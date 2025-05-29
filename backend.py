@@ -56,8 +56,8 @@ def correlate_eigengenes(eigengenes, phenotypes):
     """
     # Align samples (index) in both dataframes
     common_samples = eigengenes.index.intersection(phenotypes.index)
-    eigengenes = eigengenes.loc[common_samples]
-    phenotypes = phenotypes.loc[common_samples]
+    eigengenes = eigengenes.loc[common_samples].sort_index()
+    phenotypes = phenotypes.loc[common_samples].sort_index()
     corr_df= pd.DataFrame(index=eigengenes.columns, columns=phenotypes.columns)
     for m in eigengenes.columns:
         for ph in phenotypes.columns:
@@ -68,16 +68,16 @@ def correlate_eigengenes(eigengenes, phenotypes):
 
 
 
-def analyze_best_k(expr_matrix, k_values, resolution=1.0):
-    results = []
-    for k in k_values:
-        adata = build_knn_graph(expr_matrix, k)
-        sc.tl.leiden(adata, resolution=resolution)
-        clusters = adata.obs['leiden']
+# def analyze_best_k(expr_matrix, k_values, resolution=1.0):
+#     results = []
+#     for k in k_values:
+#         adata = build_knn_graph(expr_matrix, k)
+#         sc.tl.leiden(adata, resolution=resolution)
+#         clusters = adata.obs['leiden']
         
-        n_clusters = clusters.nunique()
-        # Optional: compute modularity (scanpy has it in adata.uns['modularity'] if computed)
-        # or silhouette score - but silhouette needs embedding or distance matrix
+#         n_clusters = clusters.nunique()
+#         # Optional: compute modularity (scanpy has it in adata.uns['modularity'] if computed)
+#         # or silhouette score - but silhouette needs embedding or distance matrix
         
-        results.append({'k': k, 'n_clusters': n_clusters})
-    return pd.DataFrame(results)
+#         results.append({'k': k, 'n_clusters': n_clusters})
+#     return pd.DataFrame(results)
