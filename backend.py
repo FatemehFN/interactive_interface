@@ -7,6 +7,10 @@ def build_knn_graph(expr_matrix, k):
     adata = sc.AnnData(expr_matrix)
     sc.pp.pca(adata)
     sc.pp.neighbors(adata, n_neighbors=k)
+    
+    # Compute UMAP and t-SNE for visualization
+    sc.tl.umap(adata)
+    sc.tl.tsne(adata, n_pcs=20)  # You can adjust this
     return adata
 
 def run_leiden(adata, resolution):

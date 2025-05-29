@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib
+import scanpy as sc
+# Optional: Tweak font size to avoid warnings from scanpy
+matplotlib.rcParams.update({'font.size': 10})
 from backend import (
     build_knn_graph,
     run_leiden,
@@ -61,6 +65,21 @@ if expr_df is not None and pheno_df is not None:
 
                 st.subheader("📂 Leiden Clusters")
                 st.dataframe(leiden_clusters.value_counts().sort_index())
+
+
+                # --- UMAP + t-SNE side-by-side ---
+                st.subheader("🧭 UMAP and 🌀 t-SNE of Samples")
+
+                fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+                # UMAP
+                sc.pl.umap(adata, color='leiden', ax=axes[0], show=False, title='UMAP')
+
+                # t-SNE
+                sc.pl.tsne(adata, color='leiden', ax=axes[1], show=False, title='t-SNE')
+
+                plt.tight_layout()
+                st.pyplot(fig)
 
                 # Step 2: Eigengenes
                 st.subheader("🧬 Module Eigengenes")
