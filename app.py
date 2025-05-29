@@ -10,8 +10,7 @@ from backend import (
     build_knn_graph,
     run_leiden,
     compute_eigengenes,
-    correlate_eigengenes,
-    analyze_best_k
+    correlate_eigengenes
 )
 
 st.set_page_config(page_title="Network Module Analyzer", layout="wide")
