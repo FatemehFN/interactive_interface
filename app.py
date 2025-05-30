@@ -94,8 +94,12 @@ if expr_df is not None and pheno_df is not None:
                 corr=corr.astype(float)
                 st.subheader("📊 Heatmap of Correlations (Phenotypes x Modules)")
                 # Transpose if needed: rows = phenotypes, columns = modules
-                fig, ax = plt.subplots(figsize=(10, 2))
-                sns.heatmap(corr.T.values, annot=True, fmt=".2f", cmap="vlag", cbar_kws={"label": "Pearson r"}, ax=ax)
+                fig_height = max(4, len(corr.columns))  # ensures a minimum height
+                fig, ax = plt.subplots(figsize=(10, fig_height))
+                n_modules = corr.shape[0]
+                n_phenotypes = corr.shape[1]
+                font_scale = min(1.2, max(0.4, 30 / (n_modules * n_phenotypes)))
+                sns.heatmap(corr.T.values, annot=True, fmt=".2f", cmap="vlag", cbar_kws={"label": "Pearson r"}, ax=ax,annot_kws={"size": font_scale * 10})
                 plt.xlabel("Modules")
                 plt.ylabel("Phenotypes")
                 st.pyplot(fig)
