@@ -19,28 +19,43 @@ def run_leiden(adata, resolution):
 
 
 def compute_eigengenes(expr_matrix, cluster_labels):
+    """
+    Compute module eigengenes using the first principal component of each module.
 
+    Parameters:
+        expr_matrix (pd.DataFrame): genes × samples
+        cluster_labels (list or pd.Series): cluster labels for each gene (length = number of genes)
+
+    Returns:
+        pd.DataFrame: samples × modules (Module_0, Module_1, ...)
+    """
     if len(cluster_labels) != expr_matrix.shape[0]:
         raise ValueError("Length of cluster_labels must match number of genes (rows in expr_matrix).")
 
     modules = {}
-    labels = sorted(set(cluster_labels))
-    
-    for label in labels:
+
+    # Try to convert labels to integers for sorting (safe even if labels are strings)
+    try:
+        unique_labels = sorted(set(cluster_labels), key=lambda x: int(x))
+    except ValueError:
+        unique_labels = sorted(set(cluster_labels))  # fallback to lex sort
+
+    for label in unique_labels:
         # Get gene indices in this module
         idx = [i for i, val in enumerate(cluster_labels) if val == label]
-        
-        # Subset expression: genes (rows) in module × all samples (columns)
+
+        # Subset expression: genes in module × all samples
         sub_expr = expr_matrix.iloc[idx, :]
-        
-        # PCA on genes × samples → need to transpose to samples × genes
+
+        # PCA on genes × samples → transpose to samples × genes
         pca = PCA(n_components=1)
         eigengene = pca.fit_transform(sub_expr.T).flatten()  # 1 value per sample
 
         modules[f"Module_{label}"] = eigengene
 
-    # Return: samples × modules
+    # Return samples × modules
     return pd.DataFrame(modules, index=expr_matrix.columns)
+
 
 
 def correlate_eigengenes(eigengenes, phenotypes):
@@ -54,14 +69,34 @@ def correlate_eigengenes(eigengenes, phenotypes):
     Returns:
         pd.DataFrame: modules × traits correlation matrix
     """
-    # Align samples (index) in both dataframes
+
+    # Ensure both indices are strings for proper alignment
+    eigengenes.index = eigengenes.index.astype(str)
+    phenotypes.index = phenotypes.index.astype(str)
+
+    # Align samples (rows)
     common_samples = eigengenes.index.intersection(phenotypes.index)
-    eigengenes = eigengenes.loc[common_samples].sort_index()
-    phenotypes = phenotypes.loc[common_samples].sort_index()
-    corr_df= pd.DataFrame(index=eigengenes.columns, columns=phenotypes.columns)
+    print(f"Found {len(common_samples)} common samples.")
+
+    eigengenes = eigengenes.loc[common_samples]
+    phenotypes = phenotypes.loc[common_samples]
+
+    # Convert to numeric in case of non-numeric columns
+    eigengenes = eigengenes.apply(pd.to_numeric, errors='coerce')
+    phenotypes = phenotypes.apply(pd.to_numeric, errors='coerce')
+
+    # Drop samples with NaNs in either dataframe
+    aligned = eigengenes.join(phenotypes, how='inner')
+    eigengenes = aligned[eigengenes.columns]
+    phenotypes = aligned[phenotypes.columns]
+
+    # Initialize correlation DataFrame
+    corr_df = pd.DataFrame(index=eigengenes.columns, columns=phenotypes.columns, dtype=float)
+
+    # Compute correlations
     for m in eigengenes.columns:
         for ph in phenotypes.columns:
-            corr_value=eigengenes[m].corr(phenotypes[ph], method='pearson')
+            corr_value = eigengenes[m].corr(phenotypes[ph], method='pearson')
             corr_df.loc[m, ph] = corr_value
 
     return corr_df

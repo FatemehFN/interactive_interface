@@ -10,8 +10,7 @@ from backend import (
     build_knn_graph,
     run_leiden,
     compute_eigengenes,
-    correlate_eigengenes,
-    analyze_best_k
+    correlate_eigengenes
 )
 
 st.set_page_config(page_title="Network Module Analyzer", layout="wide")
@@ -95,11 +94,36 @@ if expr_df is not None and pheno_df is not None:
                 corr=corr.astype(float)
                 st.subheader("📊 Heatmap of Correlations (Phenotypes x Modules)")
                 # Transpose if needed: rows = phenotypes, columns = modules
-                fig, ax = plt.subplots(figsize=(10, 2))
-                sns.heatmap(corr.T.values, annot=True, fmt=".2f", cmap="vlag", cbar_kws={"label": "Pearson r"}, ax=ax)
+                # Dynamically scale figure height
+                fig_height = max(4, len(corr.columns))  # based on number of phenotypes
+                fig, ax = plt.subplots(figsize=(10, fig_height))
+
+                # Dynamically adjust font size
+                n_modules = corr.shape[0]
+                n_phenotypes = corr.shape[1]
+                font_scale = min(1.2, max(0.4, 30 / (n_modules * n_phenotypes)))
+
+                # Calculate symmetric limits around 0
+                vmax = max(abs(corr.min().min()), abs(corr.max().max()))
+                vmin = -vmax
+
+                sns.heatmap(
+                    corr.T,  # keep labels by using DataFrame
+                    annot=True,
+                    fmt=".2f",
+                    cmap="vlag",
+                    vmin=vmin,
+                    vmax=vmax,
+                    cbar_kws={"label": "Pearson r"},
+                    annot_kws={"size": font_scale * 10},
+                    ax=ax
+                )
+
+
                 plt.xlabel("Modules")
                 plt.ylabel("Phenotypes")
                 st.pyplot(fig)
+
 
             except Exception as e:
                 st.error(f"❌ An error occurred during analysis: {e}")
