@@ -20,7 +20,8 @@ def run_leiden(adata, resolution):
 
 def compute_eigengenes(expr_matrix, cluster_labels):
     """
-    Compute module eigengenes using the first principal component of each module.
+    Compute module eigengenes using the first principal component of each module,
+    and ensure consistent sign by aligning eigengene with first gene in the module.
 
     Parameters:
         expr_matrix (pd.DataFrame): genes × samples
@@ -34,26 +35,25 @@ def compute_eigengenes(expr_matrix, cluster_labels):
 
     modules = {}
 
-    # Try to convert labels to integers for sorting (safe even if labels are strings)
     try:
         unique_labels = sorted(set(cluster_labels), key=lambda x: int(x))
     except ValueError:
-        unique_labels = sorted(set(cluster_labels))  # fallback to lex sort
+        unique_labels = sorted(set(cluster_labels))
 
     for label in unique_labels:
-        # Get gene indices in this module
         idx = [i for i, val in enumerate(cluster_labels) if val == label]
+        sub_expr = expr_matrix.iloc[idx, :]  # genes × samples
 
-        # Subset expression: genes in module × all samples
-        sub_expr = expr_matrix.iloc[idx, :]
-
-        # PCA on genes × samples → transpose to samples × genes
         pca = PCA(n_components=1)
         eigengene = pca.fit_transform(sub_expr.T).flatten()  # 1 value per sample
 
+        # Align sign with the first gene in the module
+        first_gene_expr = sub_expr.iloc[0, :].values
+        sign = np.sign(np.corrcoef(eigengene, first_gene_expr)[0, 1])
+        eigengene *= sign
+
         modules[f"Module_{label}"] = eigengene
 
-    # Return samples × modules
     return pd.DataFrame(modules, index=expr_matrix.columns)
 
 
